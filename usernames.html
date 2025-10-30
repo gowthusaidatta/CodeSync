@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CodeSync | Update Usernames</title>
+  <link rel="icon" type="image/png" href="favicon_codesync.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- DELETED AWS AMPLIFY SCRIPT TAGS -->
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen">
+  <div class="bg-white/10 backdrop-blur-md p-8 rounded-xl w-full max-w-md space-y-6 text-center shadow-lg">
+    <h1 class="text-3xl font-bold text-purple-400">⚙️ Update Your Usernames</h1>
+    <p class="text-sm text-gray-400 -mt-4">Your changes will be saved to your profile.</p>
+
+    <div class="space-y-4">
+      <div class="flex items-center bg-gray-800 p-2 rounded-lg">
+        <img src="https://leetcode.com/static/images/LeetCode_logo_rvs.png" alt="LeetCode Logo" class="w-6 h-6 mr-3">
+        <input id="leetcode" placeholder="LeetCode Username" class="w-full p-2 bg-transparent text-white placeholder-gray-500 focus:outline-none" />
+      </div>
+      <div class="flex items-center bg-gray-800 p-2 rounded-lg">
+        <img src="https://cdn.codechef.com/images/cc-logo.svg" alt="CodeChef Logo" class="w-6 h-6 mr-3">
+        <input id="codechef" placeholder="CodeChef Username" class="w-full p-2 bg-transparent text-white placeholder-gray-500 focus:outline-none" />
+      </div>
+      <div class="flex items-center bg-gray-800 p-2 rounded-lg">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/4/40/HackerRank_Icon-1000px.png" alt="HackerRank Logo" class="w-6 h-6 mr-3">
+        <input id="hackerrank" placeholder="HackerRank Username" class="w-full p-2 bg-transparent text-white placeholder-gray-500 focus:outline-none" />
+      </div>
+      <div class="flex items-center bg-gray-800 p-2 rounded-lg">
+        <img src="https://media.geeksforgeeks.org/gfg-gg-logo.svg" alt="GFG Logo" class="w-6 h-6 mr-3">
+        <input id="gfg" placeholder="GFG Username" class="w-full p-2 bg-transparent text-white placeholder-gray-500 focus:outline-none" />
+      </div>
+    </div>
+
+    <div id="status-message" class="text-sm text-center min-h-[1.25rem]"></div>
+
+    <button onclick="updateUsernames()" id="save-button" class="bg-purple-600 hover:bg-purple-700 w-full py-3 rounded-lg font-semibold text-white transition-colors">
+      💾 Save Changes
+    </button>
+    
+    <div class="flex justify-between items-center mt-6">
+      <a href="results.html" class="text-sm text-gray-300 hover:underline">← Back to Results</a>
+      <button onclick="logout()" class="text-sm text-gray-300 hover:underline">🚪 Logout</button>
+    </div>
+  </div>
+
+  <!-- START OF NEW FIREBASE SCRIPT -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+    import { firebaseConfig } from './js/firebase_config.js';
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // DOM Elements
+    const leetcodeInput = document.getElementById('leetcode');
+    const codechefInput = document.getElementById('codechef');
+    const hackerrankInput = document.getElementById('hackerrank');
+    const gfgInput = document.getElementById('gfg');
+    const statusMessage = document.getElementById('status-message');
+    const saveButton = document.getElementById('save-button');
+
+    let currentUserId = null; // Store the current user's ID
+
+    // --- Main Entry Point: Check auth state and load data ---
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            currentUserId = user.uid;
+            // User is signed in, fetch their data from Firestore
+            const userDocRef = doc(db, "users", user.uid);
+            try {
+                const docSnap = await getDoc(userDocRef);
+                if (docSnap.exists()) {
+                    const userData = docSnap.data();
+                    // Populate the input fields with data from Firestore
+                    leetcodeInput.value = userData.leetcode_username || '';
+                    codechefInput.value = userData.codechef_username || '';
+                    hackerrankInput.value = userData.hackerrank_username || '';
+                    gfgInput.value = userData.gfg_username || '';
+                } else {
+                    console.log("No profile document found for this user!");
+                }
+            } catch (err) {
+                console.error("Error fetching user document:", err);
+                statusMessage.textContent = "Could not load profile data.";
+                statusMessage.className = 'text-sm text-red-400';
+            }
+        } else {
+            // No user is signed in, redirect to the login page.
+            console.log("User not authenticated, redirecting to index.html");
+            window.location.href = "index.html";
+        }
+    });
+
+    // --- Global Functions for HTML on-click attributes ---
+    
+    // Function to update usernames in Firestore
+    window.updateUsernames = async function() {
+      if (!currentUserId) {
+        alert("Error: User not logged in.");
+        return;
+      }
+
+      saveButton.disabled = true;
+      statusMessage.textContent = "Saving...";
+      statusMessage.className = 'text-sm text-yellow-400';
+
+      const attributesToUpdate = {
+        leetcode_username: leetcodeInput.value.trim(),
+        codechef_username: codechefInput.value.trim(),
+        hackerrank_username: hackerrankInput.value.trim(),
+        gfg_username: gfgInput.value.trim()
+      };
+
+      try {
+        const userDocRef = doc(db, "users", currentUserId);
+        // Use setDoc with { merge: true } to update fields without overwriting the whole document
+        await setDoc(userDocRef, attributesToUpdate, { merge: true });
+
+        statusMessage.textContent = "Usernames updated successfully! Redirecting...";
+        statusMessage.className = 'text-sm text-green-400';
+        
+        setTimeout(() => {
+          window.location.href = 'results.html';
+        }, 1500);
+
+      } catch (err) {
+        console.error("Error updating attributes:", err);
+        statusMessage.textContent = `Update failed: ${err.message}`;
+        statusMessage.className = 'text-sm text-red-400';
+        saveButton.disabled = false;
+      }
+    }
+
+    // Function to log the user out
+    window.logout = async function() {
+      try {
+        await signOut(auth);
+        // The onAuthStateChanged listener will automatically redirect to index.html
+      } catch (err) {
+        console.error("Logout failed:", err);
+        alert("Logout failed. Please try again.");
+      }
+    }
+  </script>
+</body>
+</html>
