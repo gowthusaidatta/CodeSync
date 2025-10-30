@@ -2,16 +2,9 @@
 
 CodeSync is a modern web application designed for competitive programmers to consolidate, track, and visualize their progress across multiple coding platforms. It securely aggregates user statistics from LeetCode, CodeChef, GeeksforGeeks, and HackerRank into a single, personalized dashboard.
 
-<<<<<<< HEAD
-**[View the Live Demo](https://codesync-frontend-praveen.vercel.app/)** <!-- ### TODO: Replace with your frontend URL -->
-=======
+
 **[View the Live Demo](https://codesync-praveen.vercel.app/)** 
 >>>>>>> 3a7458e403e79f1559e42fcde0acc2f778e36051
-
-<!--- ### TODO: Add a screenshot of your project here -->
-
----
-
 ## ✨ Key Features
 
 *   **Secure User Authentication:** Users can sign up, log in, and reset their passwords. New accounts require email verification, ensuring that all users are legitimate and preventing unauthorized access.
